@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    image: postgres:16
+    container_name: postgres_dev
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456Q!
+      POSTGRES_DB: TransactionsDB
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_replication_slots=4
+      -c max_wal_senders=4
+
+  db_replica:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    image: postgres:16
+    container_name: postgres_replica
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456Q!2
+      POSTGRES_DB: TransactionsDB
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata_replica:/var/lib/postgresql/data
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
+  pgdata_replica:

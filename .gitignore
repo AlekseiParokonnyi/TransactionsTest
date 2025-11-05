@@ -1,0 +1,25 @@
+debug/
+release/
+bin/
+obj/
+packages/
+logs/
+*.user
+*.suo
+*.pdb
+*.*sdf
+*.*.config
+*.dbmdl
+*.log
+*.tlog
+*.obj
+*.cache
+*.jfm
+
+.idea/
+.editorconfig
+
+# Visual Studio 2022 cache/options directory
+.vs/
+
+/_ReSharper.Caches/

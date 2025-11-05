@@ -1,0 +1,5 @@
+CREATE PUBLICATION transactions_pub
+FOR TABLE transactions;
+
+CREATE ROLE replica_user WITH REPLICATION LOGIN PASSWORD '123456Q!2';
+GRANT CONNECT ON DATABASE "TransactionsDB" TO replica_user;
