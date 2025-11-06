@@ -3,7 +3,7 @@ using Npgsql;
 using NpgsqlTypes;
 using Transactions.Core;
 using Transactions.Repository.Abstractions;
-using Transactions.Repository.Abstractions.Models;
+using Transactions.Repository.Models;
 
 namespace Transactions.Repository;
 

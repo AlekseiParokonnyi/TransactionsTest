@@ -39,14 +39,14 @@ var upgrader = DeployChanges.To
       RunGroupOrder = 3
     })
   .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly(),
-    script => script.Contains("Deployment"),
+    script => script.Contains("ReplicationPrimary"),
     new SqlScriptOptions
     {
-      ScriptType = ScriptType.RunAlways,
+      ScriptType = ScriptType.RunOnce,
       RunGroupOrder = 4
     })
   .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly(),
-    script => script.Contains("ReplicationPrimary"),
+    script => script.Contains("Deployment"),
     new SqlScriptOptions
     {
       ScriptType = ScriptType.RunAlways,

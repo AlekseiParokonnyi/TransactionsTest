@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Transactions.Repository.Abstractions.Models;
+namespace Transactions.Repository.Models;
 
 public class DbTransactionMessage
 {

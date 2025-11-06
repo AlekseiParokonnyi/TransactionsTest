@@ -9,7 +9,7 @@ in ../SolutionItems folder
 
 3. Deploy the database. Run command below from solution root folder:
 ```
-dotnet run --project Transactions.CreateTransactionWorker
+dotnet run --project Transactions.Database
 ```
 
 4. Execute the stored procedures on postgres_dev instance of TransactionDB to generate a test data:
