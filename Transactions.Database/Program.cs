@@ -18,39 +18,60 @@ EnsureDatabaseExists(connectionString);
 var upgrader = DeployChanges.To
   .PostgresqlDatabase(connectionString)
   .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly(),
-    script => script.Contains("Tables"),
+    script => script.Contains("Schemas"),
     new SqlScriptOptions
     {
       ScriptType = ScriptType.RunOnce,
       RunGroupOrder = 1
     })
   .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly(),
-    script => script.Contains("Views"),
+    script => script.Contains("Tables"),
     new SqlScriptOptions
     {
       ScriptType = ScriptType.RunOnce,
       RunGroupOrder = 2
     })
   .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly(),
+    script => script.Contains("Views"),
+    new SqlScriptOptions
+    {
+      ScriptType = ScriptType.RunOnce,
+      RunGroupOrder = 3
+    })
+  .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly(),
+    script => script.Contains("Functions"),
+    new SqlScriptOptions
+    {
+      ScriptType = ScriptType.RunAlways,
+      RunGroupOrder = 4
+    })
+  .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly(),
     script => script.Contains("StoredProcedures"),
     new SqlScriptOptions
     {
       ScriptType = ScriptType.RunAlways,
-      RunGroupOrder = 3
+      RunGroupOrder = 5
+    })
+  .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly(),
+    script => script.Contains("Triggers"),
+    new SqlScriptOptions
+    {
+      ScriptType = ScriptType.RunOnce,
+      RunGroupOrder = 6
     })
   .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly(),
     script => script.Contains("ReplicationPrimary"),
     new SqlScriptOptions
     {
       ScriptType = ScriptType.RunOnce,
-      RunGroupOrder = 4
+      RunGroupOrder = 7
     })
   .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly(),
     script => script.Contains("Deployment"),
     new SqlScriptOptions
     {
       ScriptType = ScriptType.RunAlways,
-      RunGroupOrder = 5
+      RunGroupOrder = 8
     })
   .LogToConsole()
   .Build();

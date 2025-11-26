@@ -20,7 +20,7 @@ public class TransactionsRepository : ITransactionsRepository
   {
     await using var connection = await _dataSource.OpenConnectionAsync();
 
-    await using var command = new NpgsqlCommand("sp_insert_transaction", connection)
+    await using var command = new NpgsqlCommand("ts.sp_insert_transaction", connection)
     {
       CommandType = CommandType.StoredProcedure
     };
@@ -47,7 +47,7 @@ public class TransactionsRepository : ITransactionsRepository
   public async Task UpdateStatesByConditionAsync(TransactionState targetState, TransactionState currentState, bool updateEvenIds)
   {
     await using var connection = await _dataSource.OpenConnectionAsync();
-    await using var command = new NpgsqlCommand("sp_update_transactions_states", connection)
+    await using var command = new NpgsqlCommand("ts.sp_update_transactions_states", connection)
     {
       CommandType = CommandType.StoredProcedure
     };

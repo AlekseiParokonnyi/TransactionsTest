@@ -1,28 +1,32 @@
-CREATE TABLE transactions (
+CREATE SCHEMA ts;
+
+CREATE TABLE ts.transactions (
     id BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 10000),
     datetime TIMESTAMPTZ NOT NULL,
     amount NUMERIC(18, 2) NOT NULL,
     state INT NOT NULL,
     operationGuid UUID NOT NULL,
     message JSONB NOT NULL,
-    is_even_id BOOLEAN GENERATED ALWAYS AS (id % 2 = 0) STORED,
     PRIMARY KEY (id, datetime)
 ) PARTITION BY RANGE (datetime);
 
-CREATE INDEX idx_transactions_state_even_id ON transactions (state, is_even_id);
+CREATE INDEX idx_transactions_state
+    ON ts.transactions (state);
 
-CREATE SCHEMA IF NOT EXISTS partman;
+CREATE INDEX idx_transactions_message_gin
+    ON ts.transactions USING GIN (message);
 
-CREATE EXTENSION IF NOT EXISTS pg_partman SCHEMA partman;
+CREATE TABLE ts.transactions_default PARTITION OF ts.transactions
+    DEFAULT;
 
-SELECT partman.create_parent(
-    p_parent_table := 'public.transactions',
-    p_control := 'datetime',
-    p_type := 'range',
-    p_interval := '1 month',
-    p_premake := 3,
-    p_start_partition := to_char(
-        date_trunc('month', now()) - interval '3 months',
-        'YYYY-MM-DD'
-    )
-);
+CREATE TABLE ts.transactions_08_2025 PARTITION OF ts.transactions
+    FOR VALUES FROM ('2025-08-01') TO ('2025-09-01');
+
+CREATE TABLE ts.transactions_09_2025 PARTITION OF ts.transactions
+    FOR VALUES FROM ('2025-09-01') TO ('2025-10-01');
+
+CREATE TABLE ts.transactions_10_2025 PARTITION OF ts.transactions
+    FOR VALUES FROM ('2025-10-01') TO ('2025-11-01');
+
+CREATE TABLE ts.transactions_11_2025 PARTITION OF ts.transactions
+    FOR VALUES FROM ('2025-11-01') TO ('2025-12-01');

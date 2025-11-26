@@ -1,7 +1,7 @@
-CREATE OR REPLACE PROCEDURE mock_generate_transactions_data(num_rows INT)
+CREATE OR REPLACE PROCEDURE ts.mock_generate_transactions_data(num_rows INT)
 LANGUAGE sql
 AS $$
-INSERT INTO transactions(datetime, amount, state, operationGuid, message)
+INSERT INTO ts.transactions(datetime, amount, state, operationGuid, message)
 SELECT *
 FROM (
     SELECT
@@ -18,5 +18,5 @@ FROM (
     ORDER BY datetime
 ) sub;
 
-REFRESH MATERIALIZED VIEW CONCURRENTLY mv_transaction_totals;
+REFRESH MATERIALIZED VIEW CONCURRENTLY ts.mv_transaction_totals;
 $$;

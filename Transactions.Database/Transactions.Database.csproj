@@ -13,9 +13,12 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Deployment\**\*.sql" CopyToOutputDirectory="PreserveNewest" />
-    <EmbeddedResource Include="Tables\**\*.sql" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="Schemas\**\*.sql" CopyToOutputDirectory="PreserveNewest" />
+	<EmbeddedResource Include="Tables\**\*.sql" CopyToOutputDirectory="PreserveNewest" />
     <EmbeddedResource Include="Views\**\*.sql" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="Functions\**\*.sql" CopyToOutputDirectory="PreserveNewest" />
     <EmbeddedResource Include="StoredProcedures\**\*.sql" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="Triggers\**\*.sql" CopyToOutputDirectory="PreserveNewest" />
     <EmbeddedResource Include="ReplicationPrimary\**\*.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

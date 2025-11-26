@@ -1,7 +1,7 @@
 CREATE PUBLICATION transactions_pub
-FOR TABLE transactions;
+FOR TABLE ts.transactions;
 
 CREATE ROLE replica_user WITH REPLICATION LOGIN PASSWORD '123456Q!2';
 GRANT CONNECT ON DATABASE "TransactionsDB" TO replica_user;
-GRANT USAGE ON SCHEMA public TO replica_user;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO replica_user;
+GRANT USAGE ON SCHEMA ts TO replica_user;
+GRANT SELECT ON ALL TABLES IN SCHEMA ts TO replica_user;

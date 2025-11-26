@@ -2,52 +2,96 @@ CREATE DATABASE TransactionsDB;
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-CREATE TABLE transactions (
-    id BIGINT GENERATED ALWAYS AS IDENTITY,
+CREATE SCHEMA ts;
+
+CREATE TABLE ts.transactions (
+    id BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 10000),
     datetime TIMESTAMPTZ NOT NULL,
     amount NUMERIC(18, 2) NOT NULL,
     state INT NOT NULL,
     operationGuid UUID NOT NULL,
     message JSONB NOT NULL,
-    is_even_id BOOLEAN GENERATED ALWAYS AS (id % 2 = 0) STORED,
     PRIMARY KEY (id, datetime)
 ) PARTITION BY RANGE (datetime);
 
-CREATE INDEX idx_transactions_state_even_id ON transactions (state, is_even_id);
+CREATE INDEX idx_transactions_state ON ts.transactions (state);
 
-CREATE SCHEMA IF NOT EXISTS partman;
+CREATE INDEX idx_transactions_message_gin
+    ON ts.transactions USING GIN (message);
 
-CREATE EXTENSION IF NOT EXISTS pg_partman SCHEMA partman;
+CREATE TABLE ts.transactions_default PARTITION OF ts.transactions
+    DEFAULT;
 
-SELECT partman.create_parent(
-    p_parent_table := 'public.transactions',
-    p_control := 'datetime',
-    p_type := 'range',
-    p_interval := '1 month',
-    p_premake := 3,
-    p_start_partition := to_char(
-        date_trunc('month', now()) - interval '3 months',
-        'YYYY-MM-DD'
-    )
-);
+CREATE TABLE ts.transactions_08_2025 PARTITION OF ts.transactions
+    FOR VALUES FROM ('2025-08-01') TO ('2025-09-01');
 
-CREATE MATERIALIZED VIEW mv_transaction_totals AS
+CREATE TABLE ts.transactions_09_2025 PARTITION OF ts.transactions
+    FOR VALUES FROM ('2025-09-01') TO ('2025-10-01');
+
+CREATE TABLE ts.transactions_10_2025 PARTITION OF ts.transactions
+    FOR VALUES FROM ('2025-10-01') TO ('2025-11-01');
+
+CREATE TABLE ts.transactions_11_2025 PARTITION OF ts.transactions
+    FOR VALUES FROM ('2025-11-01') TO ('2025-12-01');
+
+CREATE MATERIALIZED VIEW ts.mv_transaction_totals AS
 SELECT
     message ->> 'clientId' AS client_id,
     message ->> 'operationType' AS operation_type,
     SUM(amount) AS total_amount
-FROM transactions
+FROM ts.transactions
 GROUP BY
     message ->> 'clientId',
     message ->> 'operationType';
 
 CREATE UNIQUE INDEX idx_mv_transaction_totals
-  ON mv_transaction_totals (client_id, operation_type);
+  ON ts.mv_transaction_totals (client_id, operation_type);
 
-CREATE OR REPLACE PROCEDURE mock_generate_transactions_data(num_rows INT)
+CREATE OR REPLACE FUNCTION ts.create_next_transactions_partitions()
+RETURNS void LANGUAGE plpgsql AS $$
+DECLARE
+    i INT;
+    start_date DATE;
+    end_date DATE;
+    partition_name TEXT;
+BEGIN
+    FOR i IN 1..3 LOOP
+        start_date := date_trunc('month', now()) + (interval '1 month' * i);
+        end_date := start_date + interval '1 month';
+        partition_name := 'transactions_' || to_char(start_date, 'MM_YYYY');
+
+        EXECUTE format('
+            CREATE TABLE IF NOT EXISTS ts.%I PARTITION OF ts.transactions
+            FOR VALUES FROM (%L) TO (%L);',
+            partition_name,
+            start_date::text,
+            end_date::text
+        );
+    END LOOP;
+
+    -- ensure default partition exists
+    EXECUTE 'CREATE TABLE IF NOT EXISTS ts.transactions_default PARTITION OF ts.transactions DEFAULT;';
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION ts.check_operationguid_unique()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM ts.transactions
+        WHERE operationGuid = NEW.operationGuid
+    ) THEN
+        RAISE EXCEPTION 'check_unique_id: Duplicate id value: %', NEW.operationGuid;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE PROCEDURE ts.mock_generate_transactions_data(num_rows INT)
 LANGUAGE sql
 AS $$
-INSERT INTO transactions(datetime, amount, state, operationGuid, message)
+INSERT INTO ts.transactions(datetime, amount, state, operationGuid, message)
 SELECT *
 FROM (
     SELECT
@@ -64,10 +108,10 @@ FROM (
     ORDER BY datetime
 ) sub;
 
-REFRESH MATERIALIZED VIEW CONCURRENTLY mv_transaction_totals;
+REFRESH MATERIALIZED VIEW CONCURRENTLY ts.mv_transaction_totals;
 $$;
 
-CREATE OR REPLACE PROCEDURE sp_insert_transaction(
+CREATE OR REPLACE PROCEDURE ts.sp_insert_transaction(
     p_datetime TIMESTAMPTZ,
     p_amount NUMERIC(18, 2),
     p_state INT,
@@ -78,13 +122,13 @@ CREATE OR REPLACE PROCEDURE sp_insert_transaction(
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    INSERT INTO transactions(datetime, amount, state, operationGuid, message)
+    INSERT INTO ts.transactions(datetime, amount, state, operationGuid, message)
     VALUES (p_datetime, p_amount, p_state, p_operation_guid, p_message)
     RETURNING id INTO p_id;
 END;
 $$;
 
-CREATE OR REPLACE PROCEDURE sp_update_transactions_states(
+CREATE OR REPLACE PROCEDURE ts.sp_update_transactions_states(
     p_target_state INT,       -- the new state to set
     p_current_state INT,      -- only update rows currently in this state
     p_update_even_ids BOOLEAN -- TRUE = update even ids, FALSE = update odd ids
@@ -93,15 +137,20 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
     IF p_update_even_ids THEN
-        UPDATE transactions
+        UPDATE ts.transactions
         SET state = p_target_state
-        WHERE is_even_id = TRUE AND state = p_current_state;
+        WHERE id % 2 = 0 AND state = p_current_state;
     ELSE
-        UPDATE transactions
+        UPDATE ts.transactions
         SET state = p_target_state
-        WHERE is_even_id = FALSE AND state = p_current_state;
+        WHERE id % 2 = 0 AND state = p_current_state;
     END IF;
 
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_transaction_totals;
+    --From my point of view, one more denormalized table might be more efficient than this materialized view
+    REFRESH MATERIALIZED VIEW CONCURRENTLY ts.mv_transaction_totals;
 END;
 $$;
+
+CREATE TRIGGER enforce_unique_id
+BEFORE INSERT ON ts.transactions
+FOR EACH ROW EXECUTE FUNCTION ts.check_operationguid_unique();
