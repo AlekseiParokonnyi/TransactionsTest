@@ -26,7 +26,7 @@ public class Program
       dataSourceBuilder.UseJsonNet(jsonSettings);
     });
 
-    builder.Services.AddOptions<AppOptions>().Bind(builder.Configuration.GetSection("Options"));
+    builder.Services.Configure<AppOptions>(builder.Configuration.GetSection("Options"));
 
     builder.Services.AddSingleton<ITransactionsRepository, TransactionsRepository>();
     builder.Services.AddSingleton<ITransactionsService, TransactionsService>();

@@ -35,7 +35,7 @@ var upgrader = DeployChanges.To
     script => script.Contains("StoredProcedures"),
     new SqlScriptOptions
     {
-      ScriptType = ScriptType.RunOnce,
+      ScriptType = ScriptType.RunAlways,
       RunGroupOrder = 3
     })
   .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly(),
